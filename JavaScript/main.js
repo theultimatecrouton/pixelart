@@ -12,81 +12,58 @@ var Grid = function(cell_size, num_cells, cnv, div){
   this.num_cells = num_cells;
   this.coloured_cells = [];
 
-  this.min_x = (this.canvas.width - num_cells*cell_size)/2;
-  this.min_y = (this.canvas.height - num_cells*cell_size)/2;
+  this.min_x = (this.canvas.width - this.num_cells*this.cell_size)/2;
+  this.min_y = (this.canvas.height - this.num_cells*this.cell_size)/2;
   this.max_x = this.min_x + this.num_cells*this.cell_size;
   this.max_y = this.min_y + this.num_cells*this.cell_size;
 }
 
+Grid.prototype.inGrid = function(x, y) {
+  return x < this.max_x && x >= this.min_x && y < this.max_y && y >= this.min_y;
+}
+
 // draw the gridlines
-Grid.prototype.draw = function(cells_to_draw=this.num_cells, is_full_grid=false) {
-  this.min_x = (this.canvas.width - this.num_cells*this.cell_size)/2;
-  this.min_y = (this.canvas.height - this.num_cells*this.cell_size)/2;
-
-  min_x = this.min_x;
-  min_y = this.min_y;
-
-  if (is_full_grid) {
-    min_x = top_left[0];
-    min_y = top_left[1];
-  }
-
+Grid.prototype.drawGridlines = function(cells_to_draw=this.num_cells, minX=this.min_x, minY = this.min_y) {
   for (i=0; i<=cells_to_draw; i++){
     this.ctx.beginPath();
-
     this.ctx.setLineDash([this.cell_size/6, this.cell_size/6]);
     this.ctx.strokeStyle = 'gray';
     this.ctx.lineWidth = this.cell_size/80;
 
-    this.ctx.moveTo(min_x + i*this.cell_size, min_y);
-    this.ctx.lineTo(min_x + i*this.cell_size, this.max_y);
+    this.ctx.moveTo(minX + i*this.cell_size, minY);
+    this.ctx.lineTo(minX + i*this.cell_size, this.max_y);
 
-    this.ctx.moveTo(min_x, min_y + i*this.cell_size);
-    this.ctx.lineTo(this.max_x, min_y + i*this.cell_size);
+    this.ctx.moveTo(minX, minY + i*this.cell_size);
+    this.ctx.lineTo(this.max_x, minY + i*this.cell_size);
 
     this.ctx.stroke();
     this.ctx.closePath();
   }
 }
 
-Grid.prototype.redrawEdges = function() {
+Grid.prototype.drawDragBox = function(rawX, rawY, width, height) {
+  this.ctx.save();
   this.ctx.beginPath();
-
   this.ctx.setLineDash([]);
-  this.ctx.strokeStyle = 'rgb(255,255,255)';
-  this.ctx.lineWidth = this.cell_size/80;
-
-  this.ctx.moveTo(this.in_x, this.min_y);
-  this.ctx.lineTo(this.min_x, this.max_y);
-
-  this.ctx.moveTo(this.min_x, this.min_y);
-  this.ctx.lineTo(this.max_x, this.min_y);
-
-  this.ctx.moveTo(this.min_x, this.max_y);
-  this.ctx.lineTo(this.max_x, this.max_y);
-
-  this.ctx.moveTo(this.max_x, this.min_y);
-  this.ctx.lineTo(this.max_x, this.max_y);
-
-  this.ctx.stroke();
+  this.ctx.strokeStyle = current_colour;
+  this.ctx.rect(rawX - this.div.offsetLeft, rawY - this.div.offsetTop, width, height);
   this.ctx.closePath();
+  this.ctx.stroke();
+  this.ctx.restore();
 }
 
-// function to colour a cell, x and y is upper left corner of the cell
-Grid.prototype.colourCell = function(x, y, colour, overall=true, undo=false) {
+Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
   // make sure the click is in the grid
   var changed = false;
-  if (x <=this.min_x + (this.num_cells-1)*this.cell_size && x>= this.min_x && y <=this.min_y + (this.num_cells-1)*this.cell_size && y>= this.min_y){
+  if (this.inGrid(leftX, topY)){
     this.ctx.beginPath();
     this.ctx.fillStyle = colour;
-    this.ctx.fillRect(x, y, this.cell_size, this.cell_size);
+    this.ctx.fillRect(leftX, topY, this.cell_size, this.cell_size);
     this.ctx.closePath();
 
-    if (colour != this.coloured_cells[[x, y]]) changed = true;
-
-    this.coloured_cells[[x, y]] = colour;
-
-    if ((overall && changed) || undo) drawOverall(x, y, [top_left[0], top_left[1]]);
+    if (colour != this.coloured_cells[[leftX, topY]]) changed = true;
+    this.coloured_cells[[leftX, topY]] = colour;
+    if (overall && changed) drawOverall(leftX, topY, [top_left[0], top_left[1]]);
   }
 
   return changed;
@@ -172,17 +149,10 @@ function addClickHandler(grid, palette) {
       h_scrolling = false;
     }
     if (drag_started){
-      // clear canvas
       grid.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      grid.colourGrid();
 
-      // redraw grid
-      for (var coords in grid.coloured_cells){
-        var coords_parsed = coords.split(',')
-        coords_parsed = [parseInt(coords_parsed[0], 10), parseInt(coords_parsed[1], 10)];
-        grid.colourCell(coords_parsed[0], coords_parsed[1], grid.coloured_cells[coords]);
-      }
-
-      // we can leave these as being outside the grid as the call to colourCell will check that they falll withiin the grid
+      // we can leave these as being outside the grid as the call to colourCell will check that they fall withiin the grid
       var finalX = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
       var finalY = grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
 
@@ -196,16 +166,16 @@ function addClickHandler(grid, palette) {
         }
       }
 
-      if (!any_changed) previous_grids.pop();
+      if (!any_changed) previous_grids.pop(); // if nothing changed then don't need to save this grid
 
       drag_started = false;
-      grid.draw();
+      grid.drawGridlines();
     }
     else if (held_down) {
       held_down = false;
       grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
       grid.colourGrid();
-      grid.draw();
+      grid.drawGridlines();
     }
 
   }, false);
@@ -217,15 +187,12 @@ function addClickHandler(grid, palette) {
       grid.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // redraw grid
-      for (var coords in grid.coloured_cells){
-        var coords_parsed = coords.split(',')
-        coords_parsed = [parseInt(coords_parsed[0], 10), parseInt(coords_parsed[1], 10)];
-        grid.colourCell(coords_parsed[0], coords_parsed[1], grid.coloured_cells[coords]);
-      }
+      grid.colourGrid();
 
       var currentX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
       var currentY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
 
+      // limit currentX and currentY
       if (currentX < grid.min_x + grid.div.offsetLeft) currentX = grid.min_x + grid.div.offsetLeft;
       else if (currentX > grid.max_x + grid.div.offsetLeft) currentX = grid.min_x + grid.div.offsetLeft + grid.cell_size*grid.num_cells;
       if (currentY < grid.min_y + grid.div.offsetTop) currentY = grid.min_y + grid.div.offsetTop;
@@ -235,16 +202,9 @@ function addClickHandler(grid, palette) {
       width = currentX - rawInitialX;
       height = currentY - rawInitialY;
 
-      grid.ctx.save();
-      grid.ctx.beginPath();
-      grid.ctx.setLineDash([]);
-      grid.ctx.strokeStyle = current_colour;
-      grid.ctx.rect(rawInitialX - grid.div.offsetLeft, rawInitialY - grid.div.offsetTop, width, height);
-      grid.ctx.closePath();
-      grid.ctx.stroke();
-      grid.ctx.restore();
+      grid.drawDragBox(rawInitialX, rawInitialY, width, height);
 
-      grid.draw();
+      grid.drawGridlines();
     }
     else if(held_down && !v_scrolling && !h_scrolling){
       var x = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
@@ -256,22 +216,20 @@ function addClickHandler(grid, palette) {
 
 }
 
+// this is to tell if an array of arrays contains an array
 function contains(arr, elem) {
-  // this is to tell if an array of arrays contains an array
   for (i=0; i<arr.length; i++){
     var match = true;
     for (j=0; j<arr[i].length; j++){
       if (arr[i][j] != elem[j]) match = false;
     }
-
     if (match) return true;
   }
-
   return false;
 }
 
+// returns an array containing the adjacent cells to cell (x, y)
 function neighbours(grid, x, y) {
-  // return the adjacent cells to x, y
   var nbours = [];
   if (x > grid.min_x) nbours.push([x-grid.cell_size, y]);
   if (x < grid.max_x-grid.cell_size) nbours.push([x+grid.cell_size, y]);
@@ -283,7 +241,7 @@ function neighbours(grid, x, y) {
 
 function fill(grid, x, y) {
   var changed = false;
-  if (x <=grid.min_x + (grid.num_cells-1)*grid.cell_size && x>= grid.min_x && y <=grid.num_cells*grid.cell_size && y>= grid.min_y){
+  if (grid.inGrid(x, y)){
     var colour = grid.coloured_cells[[x, y]];
 
     if (colour != current_colour) changed = true;
@@ -293,24 +251,17 @@ function fill(grid, x, y) {
 
       // basically need to perform dijkstra's
       var unvisited = neighbours(grid, x, y);
-
-      var count = 0;
       while (unvisited.length > 0){
-        // now visit
         var to_visit = unvisited.pop();
-
         if (grid.coloured_cells[to_visit] === colour) {
           to_colour.push(to_visit);
-
           var nbours = neighbours(grid, to_visit[0], to_visit[1]);
-
           for (var index in nbours){
-            if (!contains(visited, nbours[index]) && !contains(unvisited, nbours[index])) unvisited.push(nbours[index]); // add to unvisited if we haven't visited it before and not in unvisited
+            // add cell to unvisited if we haven't visited it before and not in unvisited already
+            if (!contains(visited, nbours[index]) && !contains(unvisited, nbours[index])) unvisited.push(nbours[index]);
           }
         }
-
         visited.push(to_visit); // has been visited
-        count++;
       }
 
       // now colour all the elements
@@ -318,8 +269,7 @@ function fill(grid, x, y) {
         grid.colourCell(to_colour[index][0], to_colour[index][1], current_colour);
       }
 
-      grid.draw();
-      grid.redrawEdges();
+      grid.drawGridlines();
     }
   }
 
@@ -342,12 +292,9 @@ var paletteCtx = paletteCanvas.getContext("2d");
 var Palette = function(num_colours) {
   // need 3 indices running over R, G, B - 0 to 255
   this.spacing = 255/(Math.pow(num_colours, 1/3)-1);
-
   this.cell_size = Math.sqrt(paletteCanvas.width*paletteCanvas.height/num_colours);
   var num_cols = Math.floor(paletteCanvas.width/this.cell_size)+1;
   var num_rows = Math.floor(paletteCanvas.height/this.cell_size)+1;
-  //paletteCanvas.width = num_cols*this.cell_size;
-  //paletteCanvas.height = num_rows*this.cell_size;
   this.colours = []; // we will fill this when we draw the palette
 }
 
@@ -384,7 +331,6 @@ Palette.prototype.changeColour = function(x, y) {
 
 var overallDiv = document.getElementById("d3");
 var overallCanvas = document.getElementById("overallCanvas");
-// var overallCtx = overallCanvas.getContext("2d");
 
 // main code
 
@@ -396,11 +342,7 @@ var top_left = [];
 
 moveWorking([fullGrid.min_x, fullGrid.min_y]);
 
-//workingGrid.draw();
-
-// fullGrid.draw();
-
-var previous_grids = []; // the dimenstions will not change, we just need to add the coloured_cells to the stack
+var previous_grids = []; // the dimensions will not change, we just need to add the coloured_cells to the stack
 
 var myPalette = new Palette(125);
 
@@ -411,7 +353,7 @@ addClickHandler(workingGrid, myPalette);
 function drawContextBox(){
   // now plot the box on the full grid
   fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
-  fullGrid.draw();
+  fullGrid.drawGridlines();
   fullGrid.colourGrid();
 
   fullGrid.ctx.save();
@@ -425,17 +367,15 @@ function drawContextBox(){
   fullGrid.ctx.restore();
 }
 
+// move our working grid to a different part of the full grid
 function moveWorking(move_to) {
-  // move our working grid to a different part of the full grid
   // need to make sure we won't go off the edge of the grid
   top_left = [fullGrid.min_x + fullGrid.cell_size*Math.floor((move_to[0] - fullGrid.min_x)/fullGrid.cell_size), fullGrid.min_y + fullGrid.cell_size*Math.floor((move_to[1] - fullGrid.min_y)/fullGrid.cell_size)];
   if (top_left[0] + workingGrid.num_cells*fullGrid.cell_size > fullGrid.max_x) top_left[0] = fullGrid.max_x - workingGrid.num_cells*fullGrid.cell_size;
   if (top_left[1] + workingGrid.num_cells*fullGrid.cell_size > fullGrid.max_y) top_left[1] = fullGrid.max_y - workingGrid.num_cells*fullGrid.cell_size;
 
-  // first move our working grid and redraw according to info from the full grid
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
-
-  // now update our coloured cells array
+  workingGrid.drawGridlines();
   workingGrid.coloured_cells = [];
 
   // can either iterate through fullGrid.coloured_cells or through all the cells in workingGrid
@@ -449,14 +389,10 @@ function moveWorking(move_to) {
       if ([fullX, fullY] in fullGrid.coloured_cells) workingGrid.colourCell(workingX, workingY, fullGrid.coloured_cells[[fullX, fullY]], false);
     }
   }
-
-  workingGrid.draw();
-
   drawContextBox();
 }
 
 function drawOverall(working_x, working_y, top_left) {
-  // top_left is the location of the working grid in to the full grid
   // transfer the coloured_cells vector to the full grid
   var coords = [working_x, working_y];
   var colour = workingGrid.coloured_cells[coords];
@@ -471,9 +407,7 @@ function drawOverall(working_x, working_y, top_left) {
   coords[1] += top_left[1];
 
   fullGrid.colourCell(coords[0], coords[1], colour, false);
-  fullGrid.coloured_cells[coords] = colour;
 }
-// localStorage.setItem('save_number', 1);
 
 function savePicture() {
   // first need to convert keys to strings in the coloured_cells array
@@ -482,13 +416,8 @@ function savePicture() {
     save_array[coords.toString()] = fullGrid.coloured_cells[coords];
   }
 
-  //var number = localStorage.getItem('save_number');
   localStorage.removeItem('picture');
   localStorage['picture'] = JSON.stringify(save_array);
-  //console.log('picture' + number + ' has been saved');
-  //localStorage.removeItem('save_number');
-  //number++;
-  //localStorage.setItem('save_number', number);
 }
 
 function loadPicture() {
@@ -510,7 +439,7 @@ function loadPicture() {
     fullGrid.coloured_cells[coords] = coloured_cells[coords_string];
   }
 
-  fullGrid.draw();
+  fullGrid.drawGridlines();
 
   moveWorking([fullGrid.min_x, fullGrid.min_y]);
 }
@@ -519,10 +448,11 @@ function clearPicture() {
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
 
   workingGrid.coloured_cells = [];
-  workingGrid.draw();
+  workingGrid.drawGridlines();
 
+  // only clear the workngGrid portion of fullGrid
   fullGrid.ctx.clearRect(top_left[0]-fullGrid.cell_size, top_left[1]-fullGrid.cell_size, 1+(workingGrid.num_cells+1)*fullGrid.cell_size, 1+(workingGrid.num_cells+1)*fullGrid.cell_size);
-  fullGrid.draw(workingGrid.num_cells, true);
+  fullGrid.drawGridlines(workingGrid.num_cells, top_left[0], top_left[1]);
 
   // now update fullGrid's coloured_cells array
   for (x=0; x<workingGrid.num_cells; x++){
@@ -540,30 +470,11 @@ function undo(){
     fullGrid.coloured_cells = previous_grids.pop();
 
     fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
-
-    for (var coords_string in fullGrid.coloured_cells){
-      var coords = coords_string.split(',')
-      coords = [parseInt(coords[0], 10), parseInt(coords[1], 10)];
-
-      fullGrid.ctx.beginPath();
-      fullGrid.ctx.fillStyle = fullGrid.coloured_cells[coords_string];
-      fullGrid.ctx.fillRect(coords[0], coords[1], fullGrid.cell_size, fullGrid.cell_size);
-      fullGrid.ctx.closePath();
-
-      // now need to add point to myGrid's array
-      fullGrid.coloured_cells[coords] = fullGrid.coloured_cells[coords_string];
-    }
-
-    fullGrid.draw();
+    fullGrid.colourGrid();
+    fullGrid.drawGridlines();
 
     moveWorking(top_left);
-
-    for (var coords in workingGrid.coloured_cells){
-      coords = coords.split(',');
-      coords = [parseInt(coords[0], 10), parseInt(coords[1], 10)];
-
-      workingGrid.colourCell(coords[0], coords[1], workingGrid.coloured_cells[coords], true, true);
-    }
+    workingGrid.colourGrid();
   }
 }
 
@@ -612,8 +523,6 @@ function zoomIn() {
     workingGrid.num_cells = fullGrid.num_cells;
   }
 
-  console.log(workingGrid.cell_size);
-
   // now update our coloured cells array
   workingGrid.coloured_cells = [];
 
@@ -629,7 +538,7 @@ function zoomIn() {
     }
   }
 
-  workingGrid.draw();
+  workingGrid.drawGridlines();
 
   drawContextBox();
 
@@ -668,7 +577,7 @@ function zoomOut() {
     }
   }
 
-  workingGrid.draw();
+  workingGrid.drawGridlines();
 
   drawContextBox();
 
