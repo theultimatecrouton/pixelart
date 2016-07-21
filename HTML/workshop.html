@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>workshop</title>
+    <link rel="icon" href="C:\Users\tombi\Pictures\Pixel Logo.png">
+    <style>
+      * { background: AliceBlue; padding: 0; margin: 0; }
+      canvas {
+              background: white;
+              display: block;
+              border: 1px solid ;
+              border-style: outset;
+              }
+      button {
+              width: 84px;
+              height: 45px;
+              background: white;
+              border: 1px solid;
+              border-style: outset;
+              color: black;
+              font-size:14px;
+              font-weight:700;
+              position: relative;
+              top: 90px;
+              left: 500px}
+      ul {
+          list-style-type: none;
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          background-color: #333;
+          }
+
+      li {
+          float: left;
+      }
+
+      li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            background-color: #333;
+            font-family: "Helvetica";
+            }
+
+      /* Change the link color to #111 (black) on hover */
+      li a:hover {
+                  background-color: #111;
+                  }
+
+      .vertical-scroll {
+                        position: absolute;
+                        left: 1275px;
+                        top: 66px;
+                        border: 1px solid #C8C8C8;
+                        width: 19px;
+                        height: 640px;
+                        z-index: 4;
+                        }
+      .vertical-scroll div.vert-bar {
+                        left:0px;
+                        top:0px;
+                        width: 20px;
+                        background-color: #C8C8C8;
+                        height: 0;
+                        }
+
+      .horiz-scroll {
+                        position: absolute;
+                        left: 500px;
+                        top: 718px;
+                        border: 1px solid #C8C8C8;
+                        width: 760px;
+                        height: 19px;
+                        z-index: 5;
+                        }
+      .horiz-scroll div.horiz-bar {
+                        left:0px;
+                        top:0px;
+                        width: 20px;
+                        background-color: #C8C8C8;
+                        height: 20px;
+                        }
+    </style>
+  </head>
+
+  <body>
+
+  <ul>
+    <li><a href="\C:\Users\tombi\Documents\Dev\Website\HTML\workshop.html">workshop</a></li>
+    <li><a href="\C:\Users\tombi\Documents\Dev\Website\HTML\gallery.html">gallery</a></li>
+  </ul>
+
+  <div id='d1' style="position: relative; top: 20px; left: 500px; z-index: 1">
+    <canvas id="gridCanvas" width="760" height="640"></canvas>
+  </div>
+
+  <div class="vertical-scroll" id="vscroll">
+    <div class="vert-bar" id="vbar"></div>
+  </div>
+
+  <div class="horiz-scroll" id="hscroll">
+    <div class="horiz-bar" id="hbar"></div>
+  </div>
+
+  <div id='d2' style="position: relative; top: 75px; left: 500px; z-index: 1">
+    <canvas id="paletteCanvas" width="760" height="152"></canvas>
+  </div>
+
+  <div id='d3' style="position: absolute; top: 66px; left: 50px; z-index: 3">
+    <canvas id="overallCanvas" width="400"; height="350"></canvas>
+  </div>
+
+  <button onclick="savePicture()">save</button>
+  <button onclick="loadPicture()">load</button>
+  <button onclick="clearPicture()">clear</button>
+  <button onclick="toggleMode('normal')">normal</button>
+  <button onclick="toggleMode('fill')">fill</button>
+  <button onclick="toggleMode('box')">box</button>
+  <button onclick="undo()">undo</button>
+  <button onclick="zoomIn()">zoom in</button>
+  <button onclick="zoomOut()">zoom out</button>
+
+  <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\jquery-3.0.0.js"></script>
+  <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\jquery-ui-1.11.4.custom\jquery-ui.min.js"></script>
+	<script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\main.js"></script>
+  </body>
+</html>
