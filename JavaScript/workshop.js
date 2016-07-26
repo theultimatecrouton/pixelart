@@ -77,8 +77,8 @@ Grid.prototype.colourGrid = function() {
 function addClickHandler(grid, palette) {
   document.addEventListener('click', function(e){
     // need the upper left corner of the cell
-    var x = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
-    var y = grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
+    var x = getLeftX(grid, e);
+    var y = getTopY(grid, e);
 
     if (mode === "fill") {
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
@@ -90,15 +90,11 @@ function addClickHandler(grid, palette) {
     var paletteY = palette.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - palCanvasDiv.offsetTop)/palette.cell_size);
     palette.changeColour(paletteX, paletteY);
 
-    var fullGridX = fullGrid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - overallDiv.offsetLeft)/fullGrid.cell_size);
-    var fullGridY = fullGrid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - overallDiv.offsetTop)/fullGrid.cell_size);
-    if (fullGridX >= fullGrid.min_x && fullGridX < fullGrid.max_x && fullGridY >= fullGrid.min_y && fullGridY < fullGrid.max_y) {
+    var fullGridX = getLeftX(fullGrid, e);
+    var fullGridY =  getTopY(fullGrid, e);;
+    if (fullGrid.inGrid(fullGridX, fullGridY)) {
       moveWorking([fullGridX, fullGridY]);
-      var top = ($(".vertical-scroll").height() - $(".vert-bar").height())*(top_left[1] - fullGrid.min_y)/(fullGrid.max_y - workingGrid.num_cells*fullGrid.cell_size - fullGrid.min_y);
-      var left = ($(".horiz-scroll").width() - $(".horiz-bar").width())*(top_left[0] - fullGrid.min_x)/(fullGrid.max_x - workingGrid.num_cells*fullGrid.cell_size - fullGrid.min_x);
-
-      $(".vert-bar").css('top', top + 'px');
-      $(".horiz-bar").css('left', left + 'px');
+      moveScrollBars();
     }
   }, false);
 
@@ -116,15 +112,15 @@ function addClickHandler(grid, palette) {
   };
 
   document.addEventListener('mousedown', function(e) {
-    initialX = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
-    initialY = grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
+    initialX = getLeftX(grid, e);
+    initialY = getTopY(grid, e);
 
     if (!drag_started && mode === "box"){
       rawInitialX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
       rawInitialY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
 
       // if our initial click was in the grid
-      if (initialX <= grid.max_x && initialX >= grid.min_x && initialY <= grid.max_y && initialY >= grid.min_y){
+      if (grid.inGrid(initialX, initialY)){
         drag_started = true;
         previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to remove this if the box doesn't actually change anything
       }
@@ -147,8 +143,8 @@ function addClickHandler(grid, palette) {
       grid.colourGrid();
 
       // we can leave these as being outside the grid as the call to colourCell will check that they fall withiin the grid
-      var finalX = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
-      var finalY = grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
+      var finalX = getLeftX(grid, e);
+      var finalY = getTopY(grid, e);
 
       var any_changed = false;
       var current_changed;
@@ -197,18 +193,26 @@ function addClickHandler(grid, palette) {
       height = currentY - rawInitialY;
 
       grid.drawDragBox(rawInitialX, rawInitialY, width, height);
-
       grid.drawGridlines();
     }
     else if(held_down && !v_scrolling && !h_scrolling){
-      var x = grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
-      var y = grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
-
+      var x = getLeftX(grid, e);
+      var y = getTopY(grid, e);
       grid.colourCell(x, y, current_colour);
     }
   }, false);
 
 }
+
+
+function getLeftX(grid, e) {
+  return grid.min_x + grid.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
+}
+
+function getTopY(grid, e) {
+  return grid.min_y + grid.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
+}
+
 
 // this is to tell if an array of arrays contains an array
 function contains(arr, elem) {
@@ -461,7 +465,7 @@ function zoomIn() {
   colourWorkingGrid();
   workingGrid.drawGridlines();
   drawContextBox();
-  updateScrollBars();
+  updateScrollBarDimensions();
 }
 
 function zoomOut() {
@@ -482,7 +486,7 @@ function zoomOut() {
   colourWorkingGrid();
   workingGrid.drawGridlines();
   drawContextBox();
-  updateScrollBars();
+  updateScrollBarDimensions();
 }
 
 
@@ -531,8 +535,15 @@ function drawScrollBars() {
   });
 }
 
+function moveScrollBars() {
+  var top = ($(".vertical-scroll").height() - $(".vert-bar").height())*(top_left[1] - fullGrid.min_y)/(fullGrid.max_y - workingGrid.num_cells*fullGrid.cell_size - fullGrid.min_y);
+  var left = ($(".horiz-scroll").width() - $(".horiz-bar").width())*(top_left[0] - fullGrid.min_x)/(fullGrid.max_x - workingGrid.num_cells*fullGrid.cell_size - fullGrid.min_x);
 
-function updateScrollBars() {
+  $(".vert-bar").css('top', top + 'px');
+  $(".horiz-bar").css('left', left + 'px');
+}
+
+function updateScrollBarDimensions() {
   var vscrollbar = document.getElementById("vbar");
   var hscrollbar = document.getElementById("hbar");
   vscrollbar.style.height = $(".vertical-scroll").height()*workingGrid.num_cells/fullGrid.num_cells + 'px';
