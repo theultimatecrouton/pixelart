@@ -1,0 +1,84 @@
+body { background: AliceBlue; padding: 0; margin: 0; }
+canvas {
+        background: white;
+        display: block;
+        border: 1px solid ;
+        border-style: outset;
+        }
+.buttons {
+        width: 84px;
+        height: 45px;
+        background: white;
+        border: 1px solid;
+        border-style: outset;
+        color: black;
+        font-size:14px;
+        font-weight:700;
+        position: relative;
+        top: 70px;
+        left: 500px}
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+    }
+
+li {
+    float: left;
+}
+
+li a {
+      display: block;
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      background-color: #333;
+      font-family: "Helvetica";
+      }
+
+/* Change the link color to #111 (black) on hover */
+li a:hover {
+            background-color: #111;
+            }
+
+.vertical-scroll {
+                  position: absolute;
+                  left: 1275px;
+                  top: 66px;
+                  border: 1px solid #C8C8C8;
+                  width: 19px;
+                  height: 640px;
+                  z-index: 4;
+                  }
+.vertical-scroll div.vert-bar {
+                  left:0px;
+                  top:0px;
+                  width: 20px;
+                  background-color: #C8C8C8;
+                  height: 0;
+                  }
+
+.horiz-scroll {
+                  position: absolute;
+                  left: 500px;
+                  top: 718px;
+                  border: 1px solid #C8C8C8;
+                  width: 760px;
+                  height: 19px;
+                  z-index: 5;
+                  }
+.horiz-scroll div.horiz-bar {
+                  left:0px;
+                  top:0px;
+                  width: 20px;
+                  background-color: #C8C8C8;
+                  height: 20px;
+                  }
+.colour-picker {
+                  position: relative;
+                  left: 300px;
+                  top: -100px;
+}
