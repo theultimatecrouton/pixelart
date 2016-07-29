@@ -84,6 +84,11 @@
                         background-color: #C8C8C8;
                         height: 20px;
                         }
+      .colour-picker {
+                        position: relative;
+                        left: 200px;
+                        top: -100px;
+      }
     </style>
   </head>
 
@@ -114,6 +119,10 @@
     <canvas id="overallCanvas" width="400"; height="350"></canvas>
   </div>
 
+  <div class="colour-picker">
+    <input type='text' id="colourPicker" />
+  </div>
+
   <button onclick="savePicture()">save</button>
   <button onclick="loadPicture()">load</button>
   <button onclick="clearPicture()">clear</button>
@@ -126,6 +135,18 @@
 
   <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\jquery-3.0.0.js"></script>
   <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\jquery-ui-1.11.4.custom\jquery-ui.min.js"></script>
-	<script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\workshop.js"></script>
+  <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\spectrum.js"></script>
+  <link rel='stylesheet' href="\C:\Users\tombi\Documents\Dev\Website\CSS\spectrum.css" />
+
+  <script>
+    $(document).ready(function() {
+      $("#colourPicker").spectrum({
+        color: "orange"
+      });
+    });
+  </script>
+
+  <script src="\C:\Users\tombi\Documents\Dev\Website\JavaScript\workshop.js"></script>
+
   </body>
 </html>
