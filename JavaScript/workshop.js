@@ -73,8 +73,8 @@ Grid.prototype.colourGrid = function() {
   }
 }
 
-// use a closure to pass the grid and palette to the mouse event handlers
-function addClickHandler(grid, palette) {
+// use a closure to pass the grid to the mouse event handlers
+function addClickHandler(grid) {
   document.addEventListener('click', function(e){
     // need the upper left corner of the cell
     var x = getLeftX(grid, e);
@@ -86,16 +86,14 @@ function addClickHandler(grid, palette) {
       if (!changed) previous_grids.pop();
     }
 
-    var paletteX = palette.cell_size*Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - palCanvasDiv.offsetLeft)/palette.cell_size);
-    var paletteY = palette.cell_size*Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - palCanvasDiv.offsetTop)/palette.cell_size);
-    palette.changeColour(paletteX, paletteY);
-
     var fullGridX = getLeftX(fullGrid, e);
     var fullGridY =  getTopY(fullGrid, e);;
     if (fullGrid.inGrid(fullGridX, fullGridY)) {
       moveWorking([fullGridX, fullGridY]);
       moveScrollBars();
     }
+
+    current_colour = $("#colourPicker").spectrum('get').toHexString();
   }, false);
 
   var drag_started = false;
@@ -278,48 +276,6 @@ function toggleMode(input) {
   mode = input;
   console.log('Mode: ' + mode);
 }
-
-// palette code
-var Palette = function(num_colours) {
-  // need 3 indices running over R, G, B - 0 to 255
-  this.spacing = 255/(Math.pow(num_colours, 1/3)-1);
-  this.cell_size = Math.sqrt(paletteCanvas.width*paletteCanvas.height/num_colours);
-  var num_cols = Math.floor(paletteCanvas.width/this.cell_size)+1;
-  var num_rows = Math.floor(paletteCanvas.height/this.cell_size)+1;
-  this.colours = []; // we will fill this when we draw the palette
-}
-
-Palette.prototype.draw = function() {
-  var x=0;
-  var y=0;
-  for(g=0.0; g<=255; g+=this.spacing){
-    for(r=0.0; r<=255; r+=this.spacing){
-      for(b=0.0; b<=255; b+=this.spacing){
-        if (x + this.cell_size > paletteCanvas.width) {
-          y += this.cell_size;
-          x = 0;
-        }
-        var colour = "rgb(" + Math.floor(r) + "," + Math.floor(g) + "," + Math.floor(b) +")";
-        paletteCtx.beginPath();
-        paletteCtx.fillStyle = colour;
-        paletteCtx.fillRect(x, y, this.cell_size, this.cell_size);
-        paletteCtx.closePath();
-
-        this.colours[[Math.round(x), Math.round(y)]] = colour; // be careful with this rounding - what if we have multiple entries between consecutive integers?
-        x += this.cell_size;
-      }
-    }
-  }
-}
-
-Palette.prototype.changeColour = function(x, y) {
-  //if (paletteCanvas.style.visibility === "visible"){
-    if (y >= 0 && y < paletteCanvas.height && x >= 0 && x < paletteCanvas.width){
-      current_colour = this.colours[[Math.round(x), Math.round(y)]];
-    }
-  //}
-}
-
 
 
 function drawContextBox(){
@@ -553,7 +509,6 @@ function updateScrollBarDimensions() {
   if ($(".horiz-bar").position().left + $(".horiz-bar").width() > $(".horiz-scroll").width()) $(".horiz-bar").css('left', $(".horiz-scroll").width() - $(".horiz-bar").width() + 'px');
 }
 
-
 // main code
 var top_left = [], previous_grids = [];
 var h_scrolling = false, v_scrolling = false;
@@ -568,13 +523,7 @@ var workingGrid = new Grid(28, 20, canvas, canvasDiv);
 
 var current_colour = 'rgb(0, 0, 0)';
 
-var palCanvasDiv = document.getElementById("d2");
-var paletteCanvas = document.getElementById("paletteCanvas");
-var paletteCtx = paletteCanvas.getContext("2d");
-var myPalette = new Palette(125);
-myPalette.draw();
-
-addClickHandler(workingGrid, myPalette);
+addClickHandler(workingGrid);
 drawScrollBars();
 moveWorking([fullGrid.min_x, fullGrid.min_y]);
 toggleMode("normal"); // others are 'fill' and 'box'
