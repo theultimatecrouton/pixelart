@@ -318,9 +318,7 @@ function moveWorking(move_to) {
   if (top_left[1] + workingGrid.num_cells*fullGrid.cell_size > fullGrid.max_y) top_left[1] = fullGrid.max_y - workingGrid.num_cells*fullGrid.cell_size;
 
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
-  workingGrid.drawGridlines();
   workingGrid.coloured_cells = [];
-
   // can either iterate through fullGrid.coloured_cells or through all the cells in workingGrid
   for (x=0; x<=workingGrid.num_cells; x++){
     for (y=0; y<=workingGrid.num_cells; y++){
@@ -332,6 +330,8 @@ function moveWorking(move_to) {
       if ([fullX, fullY] in fullGrid.coloured_cells) workingGrid.colourCell(workingX, workingY, fullGrid.coloured_cells[[fullX, fullY]], false);
     }
   }
+  workingGrid.drawGridlines();
+
   drawContextBox();
 }
 
