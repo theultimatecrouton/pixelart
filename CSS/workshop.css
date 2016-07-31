@@ -36,16 +36,17 @@ li a:hover {
                   position: absolute;
                   left: 1275px;
                   top: 66px;
-                  border: 1px solid #C8C8C8;
+                  border: 1px solid	#DCDCDC;
+                  background-color: #DCDCDC;
                   width: 19px;
                   height: 640px;
-                  z-index: 4;
+                  padding: 1px;
                   }
 .vertical-scroll div.vert-bar {
                   left:0px;
                   top:0px;
                   width: 20px;
-                  background-color: #C8C8C8;
+                  background-color:	#A9A9A9;
                   height: 0;
                   }
 
@@ -53,16 +54,17 @@ li a:hover {
                   position: absolute;
                   left: 500px;
                   top: 718px;
-                  border: 1px solid #C8C8C8;
+                  border: 1px solid #DCDCDC;
+                  background-color: #DCDCDC;
                   width: 760px;
                   height: 19px;
-                  z-index: 5;
+                  padding: 1px;
                   }
 .horiz-scroll div.horiz-bar {
                   left:0px;
                   top:0px;
                   width: 20px;
-                  background-color: #C8C8C8;
+                  background-color:	#A9A9A9;
                   height: 20px;
                   }
 .colour-picker {

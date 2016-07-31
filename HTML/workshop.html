@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>workshop</title>
-    <link rel="icon" href="C:\Users\tombi\Pictures\Pixel Logo.png">
+    <link rel="icon" href="\C:\Users\tombi\Documents\Dev\Website\Media\logo.png">
   </head>
 
   <body>
@@ -47,8 +47,8 @@
     </button>
   </div>
 
-  <div class="normal-button"  style="position: absolute; top: 250px; left: 1400px">
-    <button onclick="toggleMode('normal')">
+  <div class="pen-button"  style="position: absolute; top: 250px; left: 1400px">
+    <button onclick="toggleMode('pen')">
       <img src="\C:\Users\tombi\Documents\Dev\Website\Media\pen.png" width="30" height="30">
     </button>
   </div>
@@ -65,25 +65,31 @@
     </button>
   </div>
 
-  <div class="undo-button"  style="position: absolute; top: 400px; left: 1400px">
+  <div class="eraser-button"  style="position: absolute; top: 400px; left: 1400px">
+    <button onclick="toggleMode('eraser')">
+      <img src="\C:\Users\tombi\Documents\Dev\Website\Media\eraser.png" width="30" height="30">
+    </button>
+  </div>
+
+  <div class="undo-button"  style="position: absolute; top: 450px; left: 1400px">
     <button onclick="undo()">
       <img src="\C:\Users\tombi\Documents\Dev\Website\Media\undo.png" width="30" height="30">
     </button>
   </div>
 
-  <div class="zoom-in"  style="position: absolute; top: 450px; left: 1400px" title="zoom in">
+  <div class="zoom-in"  style="position: absolute; top: 500px; left: 1400px" title="zoom in">
     <button onclick="zoomIn()">
       <img src="\C:\Users\tombi\Documents\Dev\Website\Media\zoom-in.png" width="30" height="30">
     </button>
   </div>
 
-  <div class="zoom-out"  style="position: absolute; top: 500px; left: 1400px" title="zoom out">
+  <div class="zoom-out"  style="position: absolute; top: 550px; left: 1400px" title="zoom out">
     <button onclick="zoomOut()">
       <img src="\C:\Users\tombi\Documents\Dev\Website\Media\zoom-out.png" width="30" height="30">
     </button>
   </div>
 
-  <div class="colour-picker" style="position: absolute; top: 550px; left: 1400px">
+  <div class="colour-picker" style="position: absolute; top: 600px; left: 1400px">
     <input type='text' id="colourPicker"/>
   </div>
 

@@ -20,6 +20,8 @@ Grid.prototype.inGrid = function(x, y) {
 
 // draw the gridlines
 Grid.prototype.drawGridlines = function(cells_to_draw=this.num_cells, minX=this.min_x, minY = this.min_y) {
+  maxX = Math.min(this.max_x, minX + cells_to_draw*this.cell_size);
+  maxY = Math.min(this.max_y, minY + cells_to_draw*this.cell_size);
   for (i=0; i<=cells_to_draw; i++){
     this.ctx.beginPath();
     this.ctx.setLineDash([this.cell_size/6, this.cell_size/6]);
@@ -27,10 +29,10 @@ Grid.prototype.drawGridlines = function(cells_to_draw=this.num_cells, minX=this.
     this.ctx.lineWidth = this.cell_size/80;
 
     this.ctx.moveTo(minX + i*this.cell_size, minY);
-    this.ctx.lineTo(minX + i*this.cell_size, this.max_y);
+    this.ctx.lineTo(minX + i*this.cell_size, maxY);
 
     this.ctx.moveTo(minX, minY + i*this.cell_size);
-    this.ctx.lineTo(this.max_x, minY + i*this.cell_size);
+    this.ctx.lineTo(maxX, minY + i*this.cell_size);
 
     this.ctx.stroke();
     this.ctx.closePath();
@@ -59,10 +61,21 @@ Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
 
     if (colour != this.coloured_cells[[leftX, topY]]) changed = true;
     this.coloured_cells[[leftX, topY]] = colour;
-    if (overall && changed) drawOverall(leftX, topY, [top_left[0], top_left[1]]);
+    if (overall && changed) drawOverall(leftX, topY);
   }
 
   return changed;
+}
+
+Grid.prototype.eraseCell = function(leftX, topY) {
+  if (this.inGrid(leftX, topY) && [leftX, topY] in this.coloured_cells) {
+    delete this.coloured_cells[[leftX, topY]];
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.colourGrid();
+    this.drawGridlines();
+
+    drawOverall(leftX, topY);
+  }
 }
 
 Grid.prototype.colourGrid = function() {
@@ -123,11 +136,16 @@ function addClickHandler(grid) {
         previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to remove this if the box doesn't actually change anything
       }
     }
-    else if (mode === "normal") {
+    else if (mode === "pen") {
       held_down = true;
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
       var changed = grid.colourCell(initialX, initialY, current_colour);
       if (!changed) previous_grids.pop();
+    }
+    else if (mode === "eraser") {
+      held_down = true;
+      previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
+      grid.eraseCell(initialX, initialY);
     }
     }, false);
 
@@ -159,12 +177,8 @@ function addClickHandler(grid) {
       drag_started = false;
       grid.drawGridlines();
     }
-    else if (held_down) {
-      held_down = false;
-      grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
-      grid.colourGrid();
-      grid.drawGridlines();
-    }
+
+    held_down = false;
 
   }, false);
 
@@ -196,7 +210,8 @@ function addClickHandler(grid) {
     else if(held_down && !v_scrolling && !h_scrolling){
       var x = getLeftX(grid, e);
       var y = getTopY(grid, e);
-      grid.colourCell(x, y, current_colour);
+      if (mode === "pen") grid.colourCell(x, y, current_colour);
+      else if (mode === "eraser") grid.eraseCell(x, y);
     }
   }, false);
 
@@ -320,7 +335,7 @@ function moveWorking(move_to) {
   drawContextBox();
 }
 
-function drawOverall(working_x, working_y, top_left) {
+function drawOverall(working_x, working_y) {
   // transfer the coloured_cells vector to the full grid
   var coords = [working_x, working_y];
   var colour = workingGrid.coloured_cells[coords];
@@ -526,4 +541,4 @@ var current_colour = 'rgb(0, 0, 0)';
 addClickHandler(workingGrid);
 drawScrollBars();
 moveWorking([fullGrid.min_x, fullGrid.min_y]);
-toggleMode("normal"); // others are 'fill' and 'box'
+toggleMode("pen"); // others are 'fill' and 'box'
