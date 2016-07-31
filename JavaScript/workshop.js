@@ -67,14 +67,14 @@ Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
   return changed;
 }
 
-Grid.prototype.eraseCell = function(leftX, topY) {
+Grid.prototype.eraseCell = function(leftX, topY, overall=true) {
   if (this.inGrid(leftX, topY) && [leftX, topY] in this.coloured_cells) {
     delete this.coloured_cells[[leftX, topY]];
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.colourGrid();
     this.drawGridlines();
 
-    drawOverall(leftX, topY);
+    eraseOverall(leftX, topY);
   }
 }
 
@@ -210,7 +210,12 @@ function addClickHandler(grid) {
     else if(held_down && !v_scrolling && !h_scrolling){
       var x = getLeftX(grid, e);
       var y = getTopY(grid, e);
-      if (mode === "pen") grid.colourCell(x, y, current_colour);
+      if (mode === "pen") {
+        grid.colourCell(x, y, current_colour);
+        grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
+        grid.colourGrid();
+        grid.drawGridlines();
+      }
       else if (mode === "eraser") grid.eraseCell(x, y);
     }
   }, false);
@@ -350,6 +355,22 @@ function drawOverall(working_x, working_y) {
   coords[1] += top_left[1];
 
   fullGrid.colourCell(coords[0], coords[1], colour, false);
+}
+
+function eraseOverall(working_x, working_y) {
+  // transfer the coloured_cells vector to the full grid
+  var coords = [working_x, working_y];
+
+  // scale the coords for the full grid
+  coords[0] -= workingGrid.min_x;
+  coords[0] *= fullGrid.cell_size/workingGrid.cell_size;
+  coords[0] += top_left[0];
+
+  coords[1] -= workingGrid.min_y;
+  coords[1] *= fullGrid.cell_size/workingGrid.cell_size;
+  coords[1] += top_left[1];
+
+  fullGrid.eraseCell(coords[0], coords[1], false);
 }
 
 function savePicture() {
@@ -524,6 +545,10 @@ function updateScrollBarDimensions() {
   if ($(".horiz-bar").position().left + $(".horiz-bar").width() > $(".horiz-scroll").width()) $(".horiz-bar").css('left', $(".horiz-scroll").width() - $(".horiz-bar").width() + 'px');
 }
 
+$("#colourPicker").on('change', function() {
+  current_colour = $("#colourPicker").spectrum('get').toHexString();
+});
+
 // main code
 var top_left = [], previous_grids = [];
 var h_scrolling = false, v_scrolling = false;
@@ -536,7 +561,7 @@ var canvasDiv = document.getElementById("d1");
 var canvas = document.getElementById("gridCanvas");
 var workingGrid = new Grid(28, 20, canvas, canvasDiv);
 
-var current_colour = 'rgb(0, 0, 0)';
+var current_colour = $("#colourPicker").spectrum('get').toHexString();
 
 addClickHandler(workingGrid);
 drawScrollBars();
