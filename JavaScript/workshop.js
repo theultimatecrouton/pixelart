@@ -88,7 +88,7 @@ Grid.prototype.colourGrid = function() {
 
 // use a closure to pass the grid to the mouse event handlers
 function addClickHandler(grid) {
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function(e) {
     // need the upper left corner of the cell
     var x = getLeftX(grid, e);
     var y = getTopY(grid, e);
@@ -263,6 +263,8 @@ function fill(grid, x, y) {
     if (colour != current_colour) changed = true;
 
     if (changed){
+      grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
+      grid.colourGrid();
       var to_colour = [[x, y]], visited = [[x, y]]; // will add [x, y] coords to these
 
       // basically need to perform dijkstra's
@@ -371,6 +373,7 @@ function eraseOverall(working_x, working_y) {
   coords[1] += top_left[1];
 
   fullGrid.eraseCell(coords[0], coords[1], false);
+  drawContextBox();
 }
 
 function savePicture() {
