@@ -432,7 +432,7 @@ function clearPicture() {
 }
 
 function undo(){
-  // pop the last iteration of myGrid off the stack and draw it
+  // pop the last saved version of grid off the stack and draw it
   if (previous_grids.length > 0){
     fullGrid.coloured_cells = previous_grids.pop();
 
@@ -441,7 +441,9 @@ function undo(){
     fullGrid.drawGridlines();
 
     moveWorking(top_left);
+    workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
     workingGrid.colourGrid();
+    workingGrid.drawGridlines();
   }
 }
 
