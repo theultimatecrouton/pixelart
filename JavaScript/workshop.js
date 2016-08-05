@@ -6,6 +6,7 @@ var Grid = function(cell_size, num_cells, cnv, div){
 
   this.cell_size = cell_size;
   this.num_cells = num_cells;
+  this.area = this.cell_size * this.num_cells;
   this.coloured_cells = [];
 
   this.min_x = (this.canvas.width - this.num_cells*this.cell_size)/2;
@@ -16,6 +17,13 @@ var Grid = function(cell_size, num_cells, cnv, div){
 
 Grid.prototype.inGrid = function(x, y) {
   return x < this.max_x && x >= this.min_x && y < this.max_y && y >= this.min_y;
+}
+
+Grid.prototype.reset = function() {
+  this.min_x = (this.canvas.width - this.num_cells*this.cell_size)/2;
+  this.min_y = (this.canvas.height - this.num_cells*this.cell_size)/2;
+  this.max_x = this.min_x + this.num_cells*this.cell_size;
+  this.max_y = this.min_y + this.num_cells*this.cell_size;
 }
 
 // draw the gridlines
@@ -450,13 +458,11 @@ function undo(){
 
 function zoomIn() {
   if (workingGrid.num_cells >= 2) {
-    workingGrid.cell_size = Math.floor(2*workingGrid.cell_size);
-    workingGrid.num_cells = Math.floor(workingGrid.num_cells/2);
-  } else {
-    workingGrid.cell_size = fullGrid.cell_size;
-    workingGrid.num_cells = fullGrid.num_cells;
+    workingGrid.num_cells = Math.floor(workingGrid.num_cells/zoomRatio);
+    workingGrid.cell_size = workingGrid.area/workingGrid.num_cells;
   }
 
+  workingGrid.reset();
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
   colourWorkingGrid();
@@ -466,18 +472,19 @@ function zoomIn() {
 }
 
 function zoomOut() {
-  if (workingGrid.cell_size >= fullGrid.cell_size*2) {
-    workingGrid.cell_size /= 2;
-    workingGrid.num_cells *= 2;
+  if (workingGrid.num_cells*zoomRatio <= fullGrid.num_cells) {
+    workingGrid.num_cells = Math.ceil(zoomRatio*workingGrid.num_cells);
+    workingGrid.cell_size = workingGrid.area/workingGrid.num_cells;
   } else {
     workingGrid.num_cells = fullGrid.num_cells;
-    workingGrid.cell_size = (workingGrid.max_x - workingGrid.min_x)/workingGrid.num_cells;
+    workingGrid.cell_size = workingGrid.area/workingGrid.num_cells;
   }
 
   // amend the top left of the context box if needed
   if (top_left[0] + workingGrid.num_cells*fullGrid.cell_size > fullGrid.max_x) top_left[0] = fullGrid.max_x - workingGrid.num_cells*fullGrid.cell_size;
   if (top_left[1] + workingGrid.num_cells*fullGrid.cell_size > fullGrid.max_y) top_left[1] = fullGrid.max_y - workingGrid.num_cells*fullGrid.cell_size;
 
+  workingGrid.reset();
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
   colourWorkingGrid();
@@ -557,6 +564,7 @@ $("#colourPicker").on('change', function() {
 // main code
 var top_left = [], previous_grids = [];
 var h_scrolling = false, v_scrolling = false;
+var zoomRatio = 1.5;
 
 var overallDiv = document.getElementById("d3");
 var overallCanvas = document.getElementById("overallCanvas");
