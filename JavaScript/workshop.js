@@ -103,26 +103,103 @@ Grid.prototype.colourGrid = function() {
   }
 }
 
+Grid.prototype.getLeftX = function(e) {
+  return Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - this.div.offsetLeft - this.min_x)/this.cell_size);
+}
+
+Grid.prototype.getTopY = function(e) {
+  return Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - this.div.offsetTop - this.min_y)/this.cell_size);
+}
+
+
+// this is to tell if an array of arrays contains an array
+function contains(arr, elem) {
+  for (i=0; i<arr.length; i++){
+    var match = true;
+    for (j=0; j<arr[i].length; j++){
+      if (arr[i][j] != elem[j]) match = false;
+    }
+    if (match) return true;
+  }
+  return false;
+}
+
+// returns an array containing the adjacent cells to cell (x, y)
+Grid.prototype.neighbours = function(x, y) {
+  var nbours = [];
+  if (x > 0) nbours.push([x-1, y]);
+  if (x < this.num_cells) nbours.push([x+1, y]);
+  if (y > 0) nbours.push([x, y-1]);
+  if (y < this.num_cells) nbours.push([x, y+1]);
+
+  return nbours;
+}
+
+Grid.prototype.fill = function(x, y) {
+  var changed = false;
+  if (this.inGrid(x, y)){
+    var colour = this.coloured_cells[[x, y]];
+
+    if (colour != current_colour) changed = true;
+
+    if (changed){
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.colourGrid();
+      var to_colour = [[x, y]], visited = [[x, y]]; // will add [x, y] coords to these
+
+      // basically need to perform dijkstra's
+      var unvisited = this.neighbours(x, y);
+      while (unvisited.length > 0){
+        var to_visit = unvisited.pop();
+        if (this.coloured_cells[to_visit] === colour) {
+          to_colour.push(to_visit);
+          var nbours = this.neighbours(to_visit[0], to_visit[1]);
+          for (var index in nbours){
+            // add cell to unvisited if we haven't visited it before and not in unvisited already
+            if (!contains(visited, nbours[index]) && !contains(unvisited, nbours[index])) unvisited.push(nbours[index]);
+          }
+        }
+        visited.push(to_visit); // has been visited
+      }
+      // now colour all the elements
+      for (var index in to_colour){
+        this.colourCell(to_colour[index][0], to_colour[index][1], current_colour);
+      }
+      this.drawGridlines();
+    }
+  }
+  return changed;
+}
+
 function eraseOverall(working_x, working_y) {
   fullGrid.eraseCell(working_x + top_left[0], working_y + top_left[1], false);
   drawContextBox();
 }
 
+function getRawX(e) {
+  return e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+}
+
+function getRawY(e) {
+  return e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+}
+
+
 // use a closure to pass the grid to the mouse event handlers
 function addClickHandler(grid) {
   document.addEventListener('click', function(e) {
     // need the upper left corner of the cell
-    var x = getLeftX(grid, e);
-    var y = getTopY(grid, e);
+    var x = grid.getLeftX(e);
+    var y = grid.getTopY(e);
 
     if (mode === "fill") {
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
-      var changed = fill(grid, x, y); // this will fill the rest of the area
+      var changed = grid.fill(x, y); // this will fill the rest of the area
       if (!changed) previous_grids.pop();
     }
 
-    var fullGridX = getLeftX(fullGrid, e);
-    var fullGridY =  getTopY(fullGrid, e);;
+    var fullGridX = fullGrid.getLeftX(e);
+    var fullGridY =  fullGrid.getTopY(e);;
     if (fullGrid.inGrid(fullGridX, fullGridY)) {
       moveWorking([fullGridX, fullGridY]);
       moveScrollBars();
@@ -145,12 +222,12 @@ function addClickHandler(grid) {
   };
 
   document.addEventListener('mousedown', function(e) {
-    initialX = getLeftX(grid, e);
-    initialY = getTopY(grid, e);
+    initialX = grid.getLeftX(e);
+    initialY = grid.getTopY(e);
 
     if (!drag_started && mode === "box"){
-      rawInitialX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-      rawInitialY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      rawInitialX = getRawX(e);
+      rawInitialY = getRawY(e);
 
       // if our initial click was in the grid
       if (grid.inGrid(initialX, initialY)){
@@ -181,8 +258,8 @@ function addClickHandler(grid) {
       grid.colourGrid();
 
       // we can leave these as being outside the grid as the call to colourCell will check that they fall withiin the grid
-      var finalX = getLeftX(grid, e);
-      var finalY = getTopY(grid, e);
+      var finalX = grid.getLeftX(e);
+      var finalY = grid.getTopY(e);
 
       var any_changed = false;
       var current_changed;
@@ -213,8 +290,8 @@ function addClickHandler(grid) {
       // redraw grid
       grid.colourGrid();
 
-      var currentX = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-      var currentY = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      var currentX = getRawX(e);
+      var currentY = getRawY(e);
 
       // limit currentX and currentY
       if (currentX < grid.min_x + grid.div.offsetLeft) currentX = grid.min_x + grid.div.offsetLeft;
@@ -230,8 +307,8 @@ function addClickHandler(grid) {
       grid.drawGridlines();
     }
     else if(held_down && !v_scrolling && !h_scrolling){
-      var x = getLeftX(grid, e);
-      var y = getTopY(grid, e);
+      var x = grid.getLeftX(e);
+      var y = grid.getTopY(e);
       if (mode === "pen") {
         grid.colourCell(x, y, current_colour);
         grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
@@ -244,77 +321,6 @@ function addClickHandler(grid) {
 
 }
 
-
-function getLeftX(grid, e) {
-  return Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - grid.div.offsetLeft - grid.min_x)/grid.cell_size);
-}
-
-function getTopY(grid, e) {
-  return Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - grid.div.offsetTop - grid.min_y)/grid.cell_size);
-}
-
-
-// this is to tell if an array of arrays contains an array
-function contains(arr, elem) {
-  for (i=0; i<arr.length; i++){
-    var match = true;
-    for (j=0; j<arr[i].length; j++){
-      if (arr[i][j] != elem[j]) match = false;
-    }
-    if (match) return true;
-  }
-  return false;
-}
-
-// returns an array containing the adjacent cells to cell (x, y)
-function neighbours(grid, x, y) {
-  var nbours = [];
-  if (x > 0) nbours.push([x-1, y]);
-  if (x < grid.num_cells) nbours.push([x+1, y]);
-  if (y > 0) nbours.push([x, y-1]);
-  if (y < grid.num_cells) nbours.push([x, y+1]);
-
-  return nbours;
-}
-
-function fill(grid, x, y) {
-  var changed = false;
-  if (grid.inGrid(x, y)){
-    var colour = grid.coloured_cells[[x, y]];
-
-    if (colour != current_colour) changed = true;
-
-    if (changed){
-      grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
-      grid.colourGrid();
-      var to_colour = [[x, y]], visited = [[x, y]]; // will add [x, y] coords to these
-
-      // basically need to perform dijkstra's
-      var unvisited = neighbours(grid, x, y);
-      while (unvisited.length > 0){
-        var to_visit = unvisited.pop();
-        if (grid.coloured_cells[to_visit] === colour) {
-          to_colour.push(to_visit);
-          var nbours = neighbours(grid, to_visit[0], to_visit[1]);
-          for (var index in nbours){
-            // add cell to unvisited if we haven't visited it before and not in unvisited already
-            if (!contains(visited, nbours[index]) && !contains(unvisited, nbours[index])) unvisited.push(nbours[index]);
-          }
-        }
-        visited.push(to_visit); // has been visited
-      }
-
-      // now colour all the elements
-      for (var index in to_colour){
-        grid.colourCell(to_colour[index][0], to_colour[index][1], current_colour);
-      }
-
-      grid.drawGridlines();
-    }
-  }
-
-  return changed;
-}
 
 function toggleMode(input) {
   mode = input;
@@ -348,14 +354,7 @@ function moveWorking(move_to) {
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
   // can either iterate through fullGrid.coloured_cells or through all the cells in workingGrid
-  for (x=0; x<=workingGrid.num_cells; x++){
-    for (y=0; y<=workingGrid.num_cells; y++){
-      var fullX = top_left[0] + x;
-      var fullY = top_left[1] + y;
-
-      if ([fullX, fullY] in fullGrid.coloured_cells) workingGrid.colourCell(x, y, fullGrid.coloured_cells[[fullX, fullY]], false);
-    }
-  }
+  colourWorkingGrid();
   workingGrid.drawGridlines();
 
   drawContextBox();
