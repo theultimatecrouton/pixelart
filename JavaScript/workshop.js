@@ -84,17 +84,6 @@ Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
   return changed;
 }
 
-Grid.prototype.eraseCell = function(leftX, topY, overall=true) {
-  if (this.inGrid(leftX, topY) && [leftX, topY] in this.coloured_cells) {
-    delete this.coloured_cells[[leftX, topY]];
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.colourGrid();
-    this.drawGridlines();
-
-    if (overall) eraseOverall(leftX, topY);
-  }
-}
-
 Grid.prototype.colourGrid = function() {
   for (var coords_string in this.coloured_cells) {
     coords_string = coords_string.split(',');
@@ -103,12 +92,67 @@ Grid.prototype.colourGrid = function() {
   }
 }
 
+Grid.prototype.redraw = function() {
+  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  this.colourGrid();
+  this.drawGridlines();
+}
+
 Grid.prototype.getLeftX = function(e) {
   return Math.floor((e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft - this.div.offsetLeft - this.min_x)/this.cell_size);
 }
 
 Grid.prototype.getTopY = function(e) {
   return Math.floor((e.clientY + document.body.scrollTop + document.documentElement.scrollTop - this.div.offsetTop - this.min_y)/this.cell_size);
+}
+
+Grid.prototype.pen = function(x, y) {
+  var changed = false;
+  if (nib_size === "Small") changed = this.colourCell(x, y, current_colour);
+  else if (nib_size === "Medium") {
+      // colour all cells adjacent to the clicked cell
+      for (i=-1; i<=1; i++){
+        for (j=-1; j<=1; j++){
+          var current_changed = this.colourCell(x+i, y+j, current_colour);
+          if (current_changed) changed = true;
+        }
+      }
+  }
+  else {
+    // colour all cells two cells adjacent to the clicked cell
+    for (i=-2; i<=2; i++){
+      for (j=-2; j<=2; j++){
+        var current_changed = this.colourCell(x+i, y+j, current_colour);
+        if (current_changed) changed = true;
+      }
+    }
+  }
+  this.redraw();
+
+  return changed;
+}
+
+Grid.prototype.eraser = function(x, y) {
+  var changed = false;
+  var num_adjacent_to_erase = 0;
+  if (nib_size === "Medium") num_adjacent_to_erase = 1;
+  else if (nib_size === "Large") num_adjacent_to_erase = 2;
+
+  for (a=-num_adjacent_to_erase; a<=num_adjacent_to_erase; a++){
+    for (b=-num_adjacent_to_erase; b<=num_adjacent_to_erase; b++){
+      if (this.inGrid(x+a, y+b) && [x+a, y+b] in this.coloured_cells) {
+        delete this.coloured_cells[[x+a, y+b]];
+        changed = true;
+
+        delete fullGrid.coloured_cells[[x+a + top_left[0], y+b + top_left[1]]];
+      }
+    }
+  }
+  this.redraw();
+  fullGrid.redraw();
+  drawContextBox();
+
+  return changed;
 }
 
 
@@ -169,11 +213,6 @@ Grid.prototype.fill = function(x, y) {
     }
   }
   return changed;
-}
-
-function eraseOverall(working_x, working_y) {
-  fullGrid.eraseCell(working_x + top_left[0], working_y + top_left[1], false);
-  drawContextBox();
 }
 
 function getRawX(e) {
@@ -238,13 +277,14 @@ function addClickHandler(grid) {
     else if (mode === "pen") {
       held_down = true;
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
-      var changed = grid.colourCell(initialX, initialY, current_colour);
+      var changed = grid.pen(initialX, initialY);
       if (!changed) previous_grids.pop();
     }
     else if (mode === "eraser") {
       held_down = true;
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
-      grid.eraseCell(initialX, initialY);
+      var changed = grid.eraser(initialX, initialY);
+      if (!changed) previous_grids.pop();
     }
     }, false);
 
@@ -310,21 +350,22 @@ function addClickHandler(grid) {
       var x = grid.getLeftX(e);
       var y = grid.getTopY(e);
       if (mode === "pen") {
-        grid.colourCell(x, y, current_colour);
-        grid.ctx.clearRect(0, 0, grid.canvas.width, grid.canvas.height);
-        grid.colourGrid();
-        grid.drawGridlines();
+        grid.pen(x, y);
       }
-      else if (mode === "eraser") grid.eraseCell(x, y);
+      else if (mode === "eraser") grid.eraser(x, y);
     }
   }, false);
-
 }
 
 
 function toggleMode(input) {
   mode = input;
   console.log('Mode: ' + mode);
+}
+
+function toggleNib(input) {
+  nib_size = input;
+  console.log('Nib size: ' + input);
 }
 
 
@@ -408,13 +449,11 @@ function loadPicture() {
 }
 
 function clearPicture() {
-  workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
-  workingGrid.drawGridlines();
+  workingGrid.redraw();
 
-  fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
   fullGrid.coloured_cells = [];
-  fullGrid.drawGridlines();
+  fullGrid.redraw();
   drawContextBox();
 }
 
@@ -428,9 +467,7 @@ function undo(){
     fullGrid.drawGridlines();
 
     moveWorking(top_left);
-    workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
-    workingGrid.colourGrid();
-    workingGrid.drawGridlines();
+    workingGrid.redraw();
   }
 }
 
@@ -557,3 +594,4 @@ addClickHandler(workingGrid);
 drawScrollBars();
 moveWorking([0, 0]);
 toggleMode("pen"); // others are 'fill' and 'box'
+toggleNib("Small");
