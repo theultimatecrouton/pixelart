@@ -144,15 +144,24 @@ Grid.prototype.eraser = function(x, y) {
         delete this.coloured_cells[[x+a, y+b]];
         changed = true;
 
-        delete fullGrid.coloured_cells[[x+a + top_left[0], y+b + top_left[1]]];
+        fullGrid.eraseCell(x+a + top_left[0], y+b + top_left[1]);
       }
     }
   }
   this.redraw();
-  fullGrid.redraw();
-  drawContextBox();
 
   return changed;
+}
+
+Grid.prototype.eraseCell = function(x, y) {
+  if (this.inGrid(x, y)) {
+    delete this.coloured_cells[[x, y]];
+
+    this.ctx.beginPath();
+    this.ctx.fillStyle = 'rgb(255, 255, 255)';
+    this.ctx.fillRect(this.indexToPositionX(x), this.indexToPositionY(y), this.cell_size, this.cell_size);
+    this.ctx.closePath();
+  }
 }
 
 
@@ -225,6 +234,18 @@ function getRawY(e) {
 
 
 // use a closure to pass the grid to the mouse event handlers
+function addFullGridClickHandler(grid) {
+  grid.canvas.addEventListener('click', function(e) {
+    var x = grid.getLeftX(e);
+    var y = grid.getTopY(e);
+    if (grid.inGrid(x, y)) {
+      moveWorking([x, y]);
+      moveScrollBars();
+    }
+
+  }, false);
+}
+
 function addClickHandler(grid) {
   grid.canvas.addEventListener('click', function(e) {
     // need the upper left corner of the cell
@@ -376,7 +397,6 @@ function toggleNib(input) {
 function drawContextBox(){
   // now plot the box on the full grid
   fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
-  fullGrid.drawGridlines();
   fullGrid.colourGrid();
 
   fullGrid.ctx.save();
@@ -467,7 +487,6 @@ function undo(){
 
     fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
     fullGrid.colourGrid();
-    fullGrid.drawGridlines();
 
     moveWorking(top_left);
     workingGrid.redraw();
@@ -595,6 +614,7 @@ var workingGrid = new Grid(28, 20, canvas, canvasDiv);
 var current_colour = $("#colourPicker").spectrum('get').toHexString();
 
 addClickHandler(workingGrid);
+addFullGridClickHandler(fullGrid);
 drawScrollBars();
 moveWorking([0, 0]);
 toggleMode("pen"); // others are 'fill' and 'box'
