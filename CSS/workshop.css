@@ -26,6 +26,9 @@ li a {
       background-color: #333;
       font-family: "Helvetica";
       }
+button {
+        background-color: #DCDCDC;
+      }
 
 /* Change the link color to #111 (black) on hover */
 li a:hover {

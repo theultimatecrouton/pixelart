@@ -108,8 +108,8 @@ Grid.prototype.getTopY = function(e) {
 
 Grid.prototype.pen = function(x, y) {
   var changed = false;
-  if (nib_size === "Small") changed = this.colourCell(x, y, current_colour);
-  else if (nib_size === "Medium") {
+  if (nib_size === "small") changed = this.colourCell(x, y, current_colour);
+  else if (nib_size === "medium") {
       // colour all cells adjacent to the clicked cell
       for (i=-1; i<=1; i++){
         for (j=-1; j<=1; j++){
@@ -135,8 +135,8 @@ Grid.prototype.pen = function(x, y) {
 Grid.prototype.eraser = function(x, y) {
   var changed = false;
   var num_adjacent_to_erase = 0;
-  if (nib_size === "Medium") num_adjacent_to_erase = 1;
-  else if (nib_size === "Large") num_adjacent_to_erase = 2;
+  if (nib_size === "medium") num_adjacent_to_erase = 1;
+  else if (nib_size === "large") num_adjacent_to_erase = 2;
 
   for (a=-num_adjacent_to_erase; a<=num_adjacent_to_erase; a++){
     for (b=-num_adjacent_to_erase; b<=num_adjacent_to_erase; b++){
@@ -226,7 +226,7 @@ function getRawY(e) {
 
 // use a closure to pass the grid to the mouse event handlers
 function addClickHandler(grid) {
-  document.addEventListener('click', function(e) {
+  grid.canvas.addEventListener('click', function(e) {
     // need the upper left corner of the cell
     var x = grid.getLeftX(e);
     var y = grid.getTopY(e);
@@ -260,7 +260,7 @@ function addClickHandler(grid) {
     h_scrolling = true;
   };
 
-  document.addEventListener('mousedown', function(e) {
+  grid.canvas.addEventListener('mousedown', function(e) {
     initialX = grid.getLeftX(e);
     initialY = grid.getTopY(e);
 
@@ -288,7 +288,7 @@ function addClickHandler(grid) {
     }
     }, false);
 
-  document.addEventListener('mouseup', function(e) {
+  grid.canvas.addEventListener('mouseup', function(e) {
     if (v_scrolling || h_scrolling) {
       v_scrolling = false;
       h_scrolling = false;
@@ -321,7 +321,7 @@ function addClickHandler(grid) {
 
   }, false);
 
-  document.addEventListener('mousemove', function(e) {
+  grid.canvas.addEventListener('mousemove', function(e) {
     // now plot our drag box
     if (drag_started) {
       // clear canvas
@@ -361,11 +361,15 @@ function addClickHandler(grid) {
 function toggleMode(input) {
   mode = input;
   console.log('Mode: ' + mode);
+  $('.modebutton').css('background-color', '#DCDCDC');
+  $('.' + input + '-button').find('.modebutton').css('background-color', '#87CEFA');
 }
 
 function toggleNib(input) {
   nib_size = input;
   console.log('Nib size: ' + input);
+  $('.nibbutton').css('background-color', '#DCDCDC');
+  $('.' + input + 'nib-button').find('.nibbutton').css('background-color', '#87CEFA');
 }
 
 
@@ -378,7 +382,7 @@ function drawContextBox(){
   fullGrid.ctx.save();
   fullGrid.ctx.beginPath();
   fullGrid.ctx.setLineDash([]);
-  fullGrid.ctx.lineWidth = fullGrid.cell_size/10;
+  fullGrid.ctx.lineWidth = fullGrid.cell_size/4;
   fullGrid.ctx.strokeStyle = 'rgb(0,0,0)';
   fullGrid.ctx.rect(fullGrid.indexToPositionX(top_left[0]), fullGrid.indexToPositionY(top_left[1]), workingGrid.num_cells*fullGrid.cell_size, workingGrid.num_cells*fullGrid.cell_size);
   fullGrid.ctx.closePath();
@@ -574,6 +578,7 @@ $("#colourPicker").on('change', function() {
   current_colour = $("#colourPicker").spectrum('get').toHexString();
 });
 
+
 // main code
 var top_left = [], previous_grids = [];
 var h_scrolling = false, v_scrolling = false;
@@ -581,7 +586,7 @@ var zoomRatio = 1.5;
 
 var overallDiv = document.getElementById("d3");
 var overallCanvas = document.getElementById("overallCanvas");
-var fullGrid = new Grid(4, 80, overallCanvas, overallDiv);
+var fullGrid = new Grid(1, 320, overallCanvas, overallDiv);
 
 var canvasDiv = document.getElementById("d1");
 var canvas = document.getElementById("gridCanvas");
@@ -593,4 +598,4 @@ addClickHandler(workingGrid);
 drawScrollBars();
 moveWorking([0, 0]);
 toggleMode("pen"); // others are 'fill' and 'box'
-toggleNib("Small");
+toggleNib("small");
