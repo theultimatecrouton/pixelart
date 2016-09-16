@@ -412,13 +412,11 @@ function drawContextBox(){
 
 // move our working grid to a different part of the full grid
 function moveWorking(move_to) {
-  top_left = [Math.floor(move_to[0]), Math.floor(move_to[1])];
   var max = fullGrid.num_cells - workingGrid.num_cells;
   top_left = [Math.min(Math.max(top_left[0], 0), max), Math.min(Math.max(top_left[1], 0), max)]
 
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
-  // can either iterate through fullGrid.coloured_cells or through all the cells in workingGrid
   colourWorkingGrid();
   workingGrid.drawGridlines();
   drawContextBox();
