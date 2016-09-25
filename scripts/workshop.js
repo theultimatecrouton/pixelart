@@ -246,7 +246,7 @@ function addFullGridClickHandler(grid) {
   }, false);
 }
 
-function addClickHandler(grid) {
+function addWorkingGridClickHandler(grid) {
   grid.canvas.addEventListener('click', function(e) {
     // need the upper left corner of the cell
     var x = grid.getLeftX(e);
@@ -412,8 +412,9 @@ function drawContextBox(){
 
 // move our working grid to a different part of the full grid
 function moveWorking(move_to) {
+  move_to = [Math.floor(move_to[0]), Math.floor(move_to[1])];
   var max = fullGrid.num_cells - workingGrid.num_cells;
-  top_left = [Math.min(Math.max(top_left[0], 0), max), Math.min(Math.max(top_left[1], 0), max)]
+  top_left = [Math.min(Math.max(move_to[0], 0), max), Math.min(Math.max(move_to[1], 0), max)];
 
   workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
   workingGrid.coloured_cells = [];
@@ -470,12 +471,15 @@ function loadPicture() {
 }
 
 function clearPicture() {
-  workingGrid.coloured_cells = [];
-  workingGrid.redraw();
+  var response = confirm("Are you sure you want to delete the picture?");
+  if (response) {
+    workingGrid.coloured_cells = [];
+    workingGrid.redraw();
 
-  fullGrid.coloured_cells = [];
-  fullGrid.redraw();
-  drawContextBox();
+    fullGrid.coloured_cells = [];
+    fullGrid.redraw();
+    drawContextBox();
+  }
 }
 
 function undo(){
@@ -597,23 +601,23 @@ $("#colourPicker").on('change', function() {
 
 
 // main code
-var top_left = [], previous_grids = [];
+var top_left = [0, 0], previous_grids = [];
 var h_scrolling = false, v_scrolling = false;
 var zoomRatio = 1.5;
 
-var overallDiv = document.getElementById("d3");
+var overallDiv = document.getElementById("overallCanvasDiv");
 var overallCanvas = document.getElementById("overallCanvas");
 var fullGrid = new Grid(1, 320, overallCanvas, overallDiv);
 
-var canvasDiv = document.getElementById("d1");
+var canvasDiv = document.getElementById("gridCanvasDiv");
 var canvas = document.getElementById("gridCanvas");
 var workingGrid = new Grid(28, 20, canvas, canvasDiv);
 
 var current_colour = $("#colourPicker").spectrum('get').toHexString();
 
-addClickHandler(workingGrid);
+moveWorking([0, 0]);
+addWorkingGridClickHandler(workingGrid);
 addFullGridClickHandler(fullGrid);
 drawScrollBars();
-moveWorking([0, 0]);
 toggleMode("pen"); // others are 'fill' and 'box'
 toggleNib("small");
