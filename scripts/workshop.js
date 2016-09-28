@@ -70,8 +70,6 @@ Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
   // make sure the click is in the grid
   var changed = false;
 
-  console.log('colourCell called');
-
   if (this.inGrid(leftX, topY)){
     this.ctx.beginPath();
     this.ctx.fillStyle = colour;
