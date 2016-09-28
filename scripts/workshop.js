@@ -248,21 +248,10 @@ function addFullGridClickHandler(grid) {
 
 function addWorkingGridClickHandler(grid) {
   grid.canvas.addEventListener('click', function(e) {
-    // need the upper left corner of the cell
-    var x = grid.getLeftX(e);
-    var y = grid.getTopY(e);
-
     if (mode === "fill") {
       previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
-      var changed = grid.fill(x, y); // this will fill the rest of the area
+      var changed = grid.fill(grid.getLeftX(e), grid.getTopY(e));
       if (!changed) previous_grids.pop();
-    }
-
-    var fullGridX = fullGrid.getLeftX(e);
-    var fullGridY =  fullGrid.getTopY(e);;
-    if (fullGrid.inGrid(fullGridX, fullGridY)) {
-      moveWorking([fullGridX, fullGridY]);
-      moveScrollBars();
     }
 
     current_colour = $("#colourPicker").spectrum('get').toHexString();
