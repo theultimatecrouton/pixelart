@@ -70,6 +70,8 @@ Grid.prototype.colourCell = function(leftX, topY, colour, overall=true) {
   // make sure the click is in the grid
   var changed = false;
 
+  console.log('colourCell called');
+
   if (this.inGrid(leftX, topY)){
     this.ctx.beginPath();
     this.ctx.fillStyle = colour;
@@ -108,32 +110,30 @@ Grid.prototype.getTopY = function(e) {
 
 Grid.prototype.pen = function(x, y) {
   var changed = false;
-  if (nib_size === "small") changed = this.colourCell(x, y, current_colour);
-  else if (nib_size === "medium") {
-      // colour all cells adjacent to the clicked cell
-      for (i=-1; i<=1; i++){
-        for (j=-1; j<=1; j++){
-          var current_changed = this.colourCell(x+i, y+j, current_colour);
-          if (current_changed) changed = true;
-        }
-      }
-  }
-  else {
-    // colour all cells two cells adjacent to the clicked cell
-    for (i=-2; i<=2; i++){
-      for (j=-2; j<=2; j++){
-        var current_changed = this.colourCell(x+i, y+j, current_colour);
-        if (current_changed) changed = true;
+  previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
+
+  var num_adjacent_to_colour = 0;
+  if (nib_size === "medium") num_adjacent_to_colour = 1;
+  else if (nib_size === "large") num_adjacent_to_colour = 2;
+
+  for (i=-num_adjacent_to_colour; i<=num_adjacent_to_colour; i++){
+    for (j=-num_adjacent_to_colour; j<=num_adjacent_to_colour; j++){
+      if (this.inGrid(x+i, y+j) && this.coloured_cells[[x+i, y+j]] != current_colour) {
+        changed = true;
+        this.coloured_cells[[x+i, y+j]] = current_colour;
+        drawOverall(x+i, y+j);
       }
     }
   }
   this.redraw();
 
-  return changed;
+  if (!changed) previous_grids.pop();
 }
 
 Grid.prototype.eraser = function(x, y) {
   var changed = false;
+  previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
+
   var num_adjacent_to_erase = 0;
   if (nib_size === "medium") num_adjacent_to_erase = 1;
   else if (nib_size === "large") num_adjacent_to_erase = 2;
@@ -150,7 +150,7 @@ Grid.prototype.eraser = function(x, y) {
   }
   this.redraw();
 
-  return changed;
+  if (!changed) previous_grids.pop();
 }
 
 Grid.prototype.eraseCell = function(x, y) {
@@ -164,6 +164,23 @@ Grid.prototype.eraseCell = function(x, y) {
   }
 }
 
+Grid.prototype.colourBox = function(initialX, initialY, finalX, finalY) {
+  var changed = false;
+  previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
+  for (x=Math.min(initialX, finalX); x<=Math.max(initialX, finalX); x++){
+    for (y=Math.min(initialY, finalY); y<=Math.max(initialY, finalY); y++){
+      if (this.inGrid(x, y) && this.coloured_cells[[x, y]] != current_colour) {
+        changed = true;
+        this.coloured_cells[[x, y]] = current_colour;
+        drawOverall(x, y);
+      }
+    }
+  }
+
+  this.redraw();
+
+  if (!changed) previous_grids.pop();
+}
 
 // this is to tell if an array of arrays contains an array
 function contains(arr, elem) {
@@ -286,16 +303,12 @@ function addWorkingGridClickHandler(grid) {
     }
     else if (mode === "pen") {
       held_down = true;
-      previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
-      var changed = grid.pen(initialX, initialY);
-      if (!changed) previous_grids.pop();
-    }
+      grid.pen(initialX, initialY);
+      }
     else if (mode === "eraser") {
       held_down = true;
-      previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
       var changed = grid.eraser(initialX, initialY);
-      if (!changed) previous_grids.pop();
-    }
+      }
     }, false);
 
   grid.canvas.addEventListener('mouseup', function(e) {
@@ -311,20 +324,8 @@ function addWorkingGridClickHandler(grid) {
       var finalX = grid.getLeftX(e);
       var finalY = grid.getTopY(e);
 
-      var any_changed = false;
-      var current_changed;
-      // now we need to colour all the cells we have touched
-      for (x=Math.min(initialX, finalX); x<=Math.max(initialX, finalX); x++){
-        for (y=Math.min(initialY, finalY); y<=Math.max(initialY, finalY); y++){
-          current_changed = grid.colourCell(x, y, current_colour);
-          any_changed = any_changed || current_changed; // so only one of these need to return true for changed to be true overall
-        }
-      }
-
-      if (!any_changed) previous_grids.pop(); // if nothing changed then don't need to save this grid
-
+      grid.colourBox(initialX, initialY, finalX, finalY);
       drag_started = false;
-      grid.drawGridlines();
     }
 
     held_down = false;
