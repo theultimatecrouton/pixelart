@@ -26,6 +26,10 @@ Grid.prototype.reset = function() {
   this.max_y = this.min_y + this.num_cells*this.cell_size;
 }
 
+Grid.prototype.clear = function() {
+  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+}
+
 // draw the gridlines
 Grid.prototype.drawGridlines = function(cells_to_draw=this.num_cells, minX=this.min_x, minY = this.min_y) {
   maxX = Math.min(this.max_x, minX + cells_to_draw*this.cell_size);
@@ -93,7 +97,7 @@ Grid.prototype.colourGrid = function() {
 }
 
 Grid.prototype.redraw = function() {
-  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  this.clear();
   this.colourGrid();
   this.drawGridlines();
 }
@@ -108,7 +112,6 @@ Grid.prototype.getTopY = function(e) {
 
 Grid.prototype.pen = function(x, y) {
   var changed = false;
-  previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
 
   var num_adjacent_to_colour = 0;
   if (nib_size === "medium") num_adjacent_to_colour = 1;
@@ -125,12 +128,11 @@ Grid.prototype.pen = function(x, y) {
   }
   this.redraw();
 
-  if (!changed) previous_grids.pop();
+  return changed;
 }
 
 Grid.prototype.eraser = function(x, y) {
   var changed = false;
-  previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to push a copy, otherwise will pass by reference
 
   var num_adjacent_to_erase = 0;
   if (nib_size === "medium") num_adjacent_to_erase = 1;
@@ -148,7 +150,7 @@ Grid.prototype.eraser = function(x, y) {
   }
   this.redraw();
 
-  if (!changed) previous_grids.pop();
+  return changed;
 }
 
 Grid.prototype.eraseCell = function(x, y) {
@@ -205,13 +207,15 @@ Grid.prototype.neighbours = function(x, y) {
 
 Grid.prototype.fill = function(x, y) {
   var changed = false;
+  previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
+
   if (this.inGrid(x, y)){
     var colour = this.coloured_cells[[x, y]];
 
     if (colour != current_colour) changed = true;
 
     if (changed){
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.clear();
       this.colourGrid();
       var to_colour = [[x, y]], visited = [[x, y]]; // will add [x, y] coords to these
 
@@ -236,7 +240,8 @@ Grid.prototype.fill = function(x, y) {
       this.drawGridlines();
     }
   }
-  return changed;
+
+  if (!changed) previous_grids.pop();
 }
 
 function getRawX(e) {
@@ -263,12 +268,7 @@ function addFullGridClickHandler(grid) {
 
 function addWorkingGridClickHandler(grid) {
   grid.canvas.addEventListener('click', function(e) {
-    if (mode === "fill") {
-      previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
-      var changed = grid.fill(grid.getLeftX(e), grid.getTopY(e));
-      if (!changed) previous_grids.pop();
-    }
-
+    if (mode === "fill") grid.fill(grid.getLeftX(e), grid.getTopY(e));
     current_colour = $("#colourPicker").spectrum('get').toHexString();
   }, false);
 
@@ -293,21 +293,18 @@ function addWorkingGridClickHandler(grid) {
       rawInitialX = getRawX(e);
       rawInitialY = getRawY(e);
 
-      // if our initial click was in the grid
       if (grid.inGrid(initialX, initialY)){
         drag_started = true;
         previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to remove this if the box doesn't actually change anything
       }
     }
-    else if (mode === "pen") {
+    else {
       held_down = true;
-      grid.pen(initialX, initialY);
-      }
-    else if (mode === "eraser") {
-      held_down = true;
-      var changed = grid.eraser(initialX, initialY);
-      }
-    }, false);
+      previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
+      if (mode === "pen") grid.pen(initialX, initialY);
+      else if (mode === "eraser") grid.eraser(initialX, initialY);
+    }
+  }, false);
 
   grid.canvas.addEventListener('mouseup', function(e) {
     if (v_scrolling || h_scrolling) {
@@ -315,7 +312,7 @@ function addWorkingGridClickHandler(grid) {
       h_scrolling = false;
     }
     if (drag_started){
-      grid.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      grid.clear();
       grid.colourGrid();
 
       // we can leave these as being outside the grid as the call to colourCell will check that they fall withiin the grid
@@ -333,10 +330,7 @@ function addWorkingGridClickHandler(grid) {
   grid.canvas.addEventListener('mousemove', function(e) {
     // now plot our drag box
     if (drag_started) {
-      // clear canvas
-      grid.ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // redraw grid
+      grid.clear();
       grid.colourGrid();
 
       var currentX = getRawX(e);
@@ -358,9 +352,7 @@ function addWorkingGridClickHandler(grid) {
     else if(held_down && !v_scrolling && !h_scrolling){
       var x = grid.getLeftX(e);
       var y = grid.getTopY(e);
-      if (mode === "pen") {
-        grid.pen(x, y);
-      }
+      if (mode === "pen") grid.pen(x, y);
       else if (mode === "eraser") grid.eraser(x, y);
     }
   }, false);
@@ -384,7 +376,7 @@ function toggleNib(input) {
 
 function drawContextBox(){
   // now plot the box on the full grid
-  fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
+  fullGrid.clear();
   fullGrid.colourGrid();
 
   fullGrid.ctx.save();
@@ -404,7 +396,7 @@ function moveWorking(move_to) {
   var max = fullGrid.num_cells - workingGrid.num_cells;
   top_left = [Math.min(Math.max(move_to[0], 0), max), Math.min(Math.max(move_to[1], 0), max)];
 
-  workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
+  workingGrid.clear();
   workingGrid.coloured_cells = [];
   colourWorkingGrid();
   workingGrid.drawGridlines();
@@ -435,7 +427,7 @@ function savePicture() {
 }
 
 function loadPicture() {
-  fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
+  fullGrid.clear();
   fullGrid.coloured_cells = []; // reset
 
   var coloured_cells = JSON.parse(localStorage['picture']);
@@ -475,7 +467,7 @@ function undo(){
   if (previous_grids.length > 0){
     fullGrid.coloured_cells = previous_grids.pop();
 
-    fullGrid.ctx.clearRect(0, 0, fullGrid.canvas.width, fullGrid.canvas.height);
+    fullGrid.clear();
     fullGrid.colourGrid();
 
     moveWorking(top_left);
@@ -491,7 +483,7 @@ function zoomIn() {
   }
 
   workingGrid.reset();
-  workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
+  workingGrid.clear();
   workingGrid.coloured_cells = [];
   colourWorkingGrid();
   workingGrid.drawGridlines();
@@ -513,7 +505,7 @@ function zoomOut() {
   top_left = [Math.min(Math.max(top_left[0], 0), max), Math.min(Math.max(top_left[1], 0), max)];
 
   workingGrid.reset()
-  workingGrid.ctx.clearRect(0, 0, workingGrid.canvas.width, workingGrid.canvas.height);
+  workingGrid.clear();
   workingGrid.coloured_cells = [];
   colourWorkingGrid();
   workingGrid.drawGridlines();
