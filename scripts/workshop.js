@@ -1,4 +1,3 @@
-// create a class for our grid
 var Grid = function(cell_size, num_cells, cnv, div){
   this.canvas = cnv;
   this.ctx = this.canvas.getContext("2d");
@@ -217,7 +216,7 @@ Grid.prototype.fill = function(x, y) {
     if (changed){
       this.clear();
       this.colourGrid();
-      var to_colour = [[x, y]], visited = [[x, y]]; // will add [x, y] coords to these
+      var to_colour = [[x, y]], visited = [[x, y]];
 
       // basically need to perform dijkstra's
       var unvisited = this.neighbours(x, y);
@@ -231,9 +230,9 @@ Grid.prototype.fill = function(x, y) {
             if (!contains(visited, nbours[index]) && !contains(unvisited, nbours[index])) unvisited.push(nbours[index]);
           }
         }
-        visited.push(to_visit); // has been visited
+        visited.push(to_visit);
       }
-      // now colour all the elements
+
       for (var index in to_colour){
         this.colourCell(to_colour[index][0], to_colour[index][1], current_colour);
       }
@@ -253,7 +252,6 @@ function getRawY(e) {
 }
 
 
-// use a closure to pass the grid to the mouse event handlers
 function addFullGridClickHandler(grid) {
   grid.canvas.addEventListener('click', function(e) {
     var x = grid.getLeftX(e);
@@ -295,7 +293,7 @@ function addWorkingGridClickHandler(grid) {
 
       if (grid.inGrid(initialX, initialY)){
         drag_started = true;
-        previous_grids.push(Object.assign({}, fullGrid.coloured_cells)); // have to remove this if the box doesn't actually change anything
+        previous_grids.push(Object.assign({}, fullGrid.coloured_cells));
       }
     }
     else {
@@ -315,7 +313,6 @@ function addWorkingGridClickHandler(grid) {
       grid.clear();
       grid.colourGrid();
 
-      // we can leave these as being outside the grid as the call to colourCell will check that they fall withiin the grid
       var finalX = grid.getLeftX(e);
       var finalY = grid.getTopY(e);
 
@@ -328,7 +325,6 @@ function addWorkingGridClickHandler(grid) {
   }, false);
 
   grid.canvas.addEventListener('mousemove', function(e) {
-    // now plot our drag box
     if (drag_started) {
       grid.clear();
       grid.colourGrid();
@@ -336,13 +332,11 @@ function addWorkingGridClickHandler(grid) {
       var currentX = getRawX(e);
       var currentY = getRawY(e);
 
-      // limit currentX and currentY
       if (currentX < grid.min_x + grid.div.offsetLeft) currentX = grid.min_x + grid.div.offsetLeft;
       else if (currentX > grid.max_x + grid.div.offsetLeft) currentX = grid.min_x + grid.div.offsetLeft + grid.cell_size*grid.num_cells;
       if (currentY < grid.min_y + grid.div.offsetTop) currentY = grid.min_y + grid.div.offsetTop;
       else if (currentY > grid.max_y + grid.div.offsetTop) currentY = grid.min_y + grid.div.offsetTop + grid.cell_size*grid.num_cells;
 
-      // update box parameters
       width = currentX - rawInitialX;
       height = currentY - rawInitialY;
 
@@ -375,7 +369,6 @@ function toggleNib(input) {
 
 
 function drawContextBox(){
-  // now plot the box on the full grid
   fullGrid.clear();
   fullGrid.colourGrid();
 
@@ -390,7 +383,6 @@ function drawContextBox(){
   fullGrid.ctx.restore();
 }
 
-// move our working grid to a different part of the full grid
 function moveWorking(move_to) {
   move_to = [Math.floor(move_to[0]), Math.floor(move_to[1])];
   var max = fullGrid.num_cells - workingGrid.num_cells;
@@ -404,11 +396,9 @@ function moveWorking(move_to) {
 }
 
 function drawOverall(working_x, working_y) {
-  // transfer the coloured_cells vector to the full grid
   var coords = [working_x, working_y];
   var colour = workingGrid.coloured_cells[coords];
 
-  // scale the coords for the full grid
   coords[0] += top_left[0];
   coords[1] += top_left[1];
 
@@ -463,7 +453,6 @@ function clearPicture() {
 }
 
 function undo(){
-  // pop the last saved version of grid off the stack and draw it
   if (previous_grids.length > 0){
     fullGrid.coloured_cells = previous_grids.pop();
 
@@ -500,7 +489,6 @@ function zoomOut() {
     workingGrid.cell_size = workingGrid.area/workingGrid.num_cells;
   }
 
-  // amend the top left of the context box if needed
   var max = fullGrid.num_cells - workingGrid.num_cells;
   top_left = [Math.min(Math.max(top_left[0], 0), max), Math.min(Math.max(top_left[1], 0), max)];
 
