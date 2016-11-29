@@ -4,61 +4,14 @@
     <meta charset="utf-8" />
     <title>gallery</title>
     <link rel="icon" href="media\logo.png">
-    <style>
-      * { padding: 0; margin: 0; background: AliceBlue;}
-      canvas {
-              background: white;
-              display: block;
-              border: 1px solid ;
-              border-style: outset;
-              }
-      button {
-              width: 130px;
-              height: 45px;
-              background: white;
-              border: 1px solid;
-              border-style: outset;
-              color: black;
-              font-size:14px;
-              font-weight:700;
-              position: relative;
-              top: 30px;
-              left: 500px
-            }
-      ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: #333;
-        }
-
-      li {
-          float: left;
-      }
-
-      li a {
-          display: block;
-          color: white;
-          text-align: center;
-          padding: 14px 16px;
-          text-decoration: none;
-          background-color: #333;
-          font-family: "Helvetica";
-      }
-
-      /* Change the link color to #111 (black) on hover */
-      li a:hover {
-          background-color: #111;
-      }
-    </style>
+    <link rel='stylesheet' href="static\CSS\workshop.css" />
   </head>
 
   <body>
 
   <ul>
-    <li><a href="index.html">workshop</a></li>
-    <li><a href="gallery.html">gallery</a></li>
+    <li><a href="{{ url_for('welcome') }}">workshop</a></li>
+    <li><a href="{{ url_for('gallery') }}">gallery</a></li>
   </ul>
 
   <div id="displayDiv" style="position: relative; top: 20px; left: 500px; z-index: 0">
@@ -66,7 +19,6 @@
   </div>
 
   <button onclick="displayPicture()">display saved picture</button>
-  <button onclick="exportPicture()">export</button>
 
 	<script src="scripts\gallery.js"></script>
   </body>

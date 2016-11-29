@@ -1,24 +1,35 @@
 import os
 from sqlite3 import dbapi2 as sqlite3
-from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
-from flask.ext.session import Session
-
+from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, jsonify, json
+from flask_login import LoginManager, login_required, logout_user, login_user, current_user, UserMixin
 
 # create our little application :)
 app = Flask(__name__)
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SECRET_KEY'] = 'super secret key'
-Session(app)
 
 # Load default config and override config from an environment variable
-app.config.update(dict(
+app.config.update(
     DATABASE=os.path.join(app.root_path, 'pixelpicasso.db'),
     DEBUG=True,
-    SECRET_KEY='development key',
-    USERNAME='admin',
-    PASSWORD='default'
-))
-app.config.from_envvar('PIXELPICASSO_SETTINGS', silent=True)
+    SECRET_KEY='super secret key'
+)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+# silly user model
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+        self.name = "user" + str(id)
+        self.password = self.name + "_secret"
+
+    def __repr__(self):
+        return "%d/%s/%s" % (self.id, self.name, self.password)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
 
 
 def connect_db():
@@ -58,57 +69,64 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
-
 @app.route('/')
 def welcome():
     return render_template('workshop.html')
 
 
-@app.route('/add', methods=['POST'])
+@app.route('/save', methods=['GET', 'POST'])
+@login_required
 def save():
-    if not session.get('logged_in'):
-        abort(401)
+    # if not current_user.is_authenticated:
+    #     abort(401)
     db = get_db()
-    db.execute('insert into pictures (user, picture_array) values (?, ?)',
-               [request.form['title'], request.form['text']])
+    db.execute("insert into pictures (user, picture_name, picture_array) values (?, ?, ?)", (current_user.id, "test_picture_name", request.data))
     db.commit()
     flash('New entry was successfully posted')
-    return redirect(url_for('workshop'))
+    # return redirect(url_for('workshop'))
+    return request.data
+
+@app.route('/load', methods=['GET'])
+@login_required
+def load():
+    # if not current_user.is_authenticated:
+    #     abort(401)
+    db = get_db()
+    qry = db.execute("select picture_array from pictures where user='" + current_user.id + "' and picture_name='test_picture_name'")
+    return qry.fetchall()
 
 
-@app.route('/create_account', methods=['GET', 'POST'])
-def create_account():
+@app.route('/gallery')
+def gallery():
+    return render_template('gallery.html')
+
+
+@app.route('/<username>', methods=['POST'])
+def user(username):
     error = None
-    if request.method == 'POST':
-		db = get_db()
-		db.execute('insert into users (username, password) values (?, ?)',
-		           [request.form['username'], request.form['password']])
-		db.commit()
-		flash('New account was successfully created')
-    return render_template('create_account.html', error=error)
-
-
-@app.route('/', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
+    if request.form['action']=='login':
         db = get_db()
         qry = db.execute("select * from users where username='" + request.form['username'] + "' and password='" + request.form['password'] + "'")
         if qry.fetchone() is not None:
-            session['logged_in'] = True
+            user = User(request.form['username'])
+            login_user(user)
             flash('You were logged in')
             return render_template('workshop.html')
-            # return redirect(url_for('workshop'))
         else:
             error = 'invalid username or password'
-            return render_template('workshop.html', error=error)
-            # return render_template('login.html', error=error)
+    else:
+        # create account
+        db = get_db()
+    	db.execute('insert into users (username, password) values (?, ?)', \
+    	           [request.form['username'], request.form['password']])
+    	db.commit()
+    	flash('New account was successfully created')
+    return render_template('workshop.html', error=error)
 
 
-@app.route('/')
+@app.route('/logout', methods=['GET'])
+@login_required
 def logout():
-    # session.pop('logged_in', None)
-    session['logged_in'] = False
-    print session.logged_in
+    logout_user()
     flash('You were logged out')
     return render_template('workshop.html')

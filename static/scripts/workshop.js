@@ -412,8 +412,23 @@ function savePicture() {
     save_array[coords.toString()] = fullGrid.coloured_cells[coords];
   }
 
-  localStorage.removeItem('picture');
-  localStorage['picture'] = JSON.stringify(save_array);
+  javascript_data = JSON.stringify(save_array);
+
+  // $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+  $.ajax({
+      type: "POST",
+      headers: {"Content-Type": "application/json"},
+      url: '/save',
+      data: javascript_data,
+      success: function(response) {
+          console.log(response);
+      },
+      error: function(response, error) {
+          console.log(response);
+          console.log(error);
+      }
+  });
 }
 
 function loadPicture() {
@@ -421,6 +436,20 @@ function loadPicture() {
   fullGrid.coloured_cells = []; // reset
 
   var coloured_cells = JSON.parse(localStorage['picture']);
+
+  $.ajax({
+      type: "GET",
+      headers: {"Content-Type": "application/json"},
+      url: '/load',
+      success: function(response) {
+          coloured_cells = response;
+          console.log(response);
+      },
+      error: function(response, error) {
+          console.log(response);
+          console.log(error);
+      }
+  });
 
   for (var coords_string in coloured_cells){
     var coords = coords_string.split(',')
@@ -437,7 +466,7 @@ function loadPicture() {
 
   fullGrid.drawGridlines();
 
-  moveWorking([fullGrid.min_x, fullGrid.min_y]);
+  moveWorking([0, 0]);
 }
 
 function clearPicture() {

@@ -11,8 +11,8 @@
 	<link rel='stylesheet' href="static\CSS\workshop.css" />
 
   <ul>
-    <li><a href="workshop.html">workshop</a></li>
-    <li><a href="gallery.html">gallery</a></li>
+    <li><a href="/">workshop</a></li>
+    <li><a href="{{ url_for('gallery') }}">gallery</a></li>
   </ul>
 
   <div id='gridCanvasDiv' style="position: absolute; top: 66px; left: 500px;">
@@ -117,21 +117,19 @@
   <script> alert('{{ error }}') </script>
   {% endif %}
 
-  <script> console.log('{{session.logged_in}}') </script>
+  <script> console.log('{{current_user.is_authenticated}}') </script>
 
-	{% if not session.logged_in %}
+	{% if not current_user.is_authenticated %}
   <div class="input-form">
-		<form action="{{ url_for('login') }}" method="post" style="background-color: #333; position: absolute;	top: -7px; left: 1000px; overflow: hidden; width: 100%;">
+		<form action="{{ url_for('user', username='default_user') }}" method="post" style="background-color: #333; position: absolute;	top: -7px; left: 1000px; overflow: hidden; width: 100%;">
 			<dl>
 			  <dd><input type="text" name="username" placeholder="username" required>
 			  <dd><input type="password" name="password" placeholder="password" required>
-			  <dd><input type="submit" value="login">
+			  <dd><input type="submit" name="action" value="login">
+        <dd><input type="submit" name="action" value="create account">
 			</dl>
 		</form>
   </div>
-	<div style="position: absolute; top: 13px; left: 1550px; font-family: Helvetica;">
-		<a href="{{ url_for('create_account') }}"><font color="white">create account</font></a>
-	</div>
   {% else %}
   <div style="position: absolute; top: 13px; left: 1450px; font-family: Helvetica;">
 		<a href="{{ url_for('logout') }}"><font color="white">log out</font></a>

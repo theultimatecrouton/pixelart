@@ -2,6 +2,7 @@ drop table if exists pictures;
 create table pictures (
   id integer primary key autoincrement,
   user text not null,
+  picture_name text not null,
   picture_array text not null
 );
 
